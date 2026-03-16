@@ -1,12 +1,9 @@
 import React from 'react';
 
+import SchedulePage from '../components/Schedule/SchedulePage';
+
 const Schedule = () => {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Schedule</h1>
-      <p>Schedule content goes here.</p>
-    </div>
-  );
+  return <SchedulePage />;
 };
 
 export default Schedule;

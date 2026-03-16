@@ -26,6 +26,7 @@ app.use("/auth", require("./routes/auth.routes"));
 app.use("/users", require("./routes/user.routes"));
 app.use("/posts", require("./routes/post.routes"));
 app.use("/comments", require("./routes/comment.routes"));
+app.use("/schedule", require("./routes/schedule.routes"));
 app.use("/notes", require("./routes/note.routes"));
 app.use("/events", require("./routes/event.routes"));
 app.use("/market", require("./routes/market.routes"));
