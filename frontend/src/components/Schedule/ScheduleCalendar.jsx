@@ -4,7 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
-const ScheduleCalendar = ({ events, view = 'timeGridWeek' }) => {
+const ScheduleCalendar = ({ events, onEventClick, view = 'timeGridWeek' }) => {
   
   // Define custom styles for events based on type
   const eventDidMount = (info) => {
@@ -73,6 +73,11 @@ const ScheduleCalendar = ({ events, view = 'timeGridWeek' }) => {
         weekends={true}
         height="100%"
         eventDidMount={eventDidMount}
+        eventClick={(info) => {
+          if (onEventClick) {
+            onEventClick(info.event);
+          }
+        }}
         // Custom event content could go here if we want more detail
       />
     </div>

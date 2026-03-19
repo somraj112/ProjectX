@@ -8,9 +8,37 @@ const notesService = {
   },
 
   uploadNote: async (noteData) => {
-    // Expect noteData to contain file and metadata, likely FormData
-    // Axios sets Content-Type to multipart/form-data automatically for FormData
-    const response = await api.post('/notes', noteData);
+    let payload = noteData;
+    if (!(noteData instanceof FormData)) {
+        payload = new FormData();
+        Object.keys(noteData).forEach(key => {
+            if (noteData[key] !== null && noteData[key] !== undefined) {
+                payload.append(key, noteData[key]);
+            }
+        });
+    }
+
+    const response = await api.post('/notes', payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+  },
+
+  updateNote: async (id, noteData) => {
+    let payload = noteData;
+    if (!(noteData instanceof FormData)) {
+      payload = new FormData();
+      Object.keys(noteData).forEach(key => {
+        if (noteData[key] !== null && noteData[key] !== undefined) {
+          payload.append(key, noteData[key]);
+        }
+      });
+    }
+    const response = await api.patch(`/notes/${id}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 

@@ -7,7 +7,21 @@ const lostFoundService = {
   },
 
   reportItem: async (itemData) => {
-    const response = await api.post('/lost-found', itemData);
+    let payload = itemData;
+    if (!(itemData instanceof FormData)) {
+        payload = new FormData();
+        Object.keys(itemData).forEach(key => {
+            if (itemData[key] !== null && itemData[key] !== undefined) {
+                payload.append(key, itemData[key]);
+            }
+        });
+    }
+
+    const response = await api.post('/lost-found', payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data;
   },
 

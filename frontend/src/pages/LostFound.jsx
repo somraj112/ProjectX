@@ -7,6 +7,7 @@ import Loader from '../components/ui/Loader';
 import EmptyState from '../components/ui/EmptyState';
 import Tabs from '../components/ui/Tabs';
 import lostfoundService from '../services/lostfound.service';
+import toast from 'react-hot-toast';
 
 const LostFound = () => {
   const [items, setItems] = useState([]);
@@ -26,7 +27,7 @@ const LostFound = () => {
         const data = await lostfoundService.getItems(type);
         const itemsArray = Array.isArray(data) ? data : (data.items || []);
         
-        let displayItems = itemsArray.length > 0 ? itemsArray : MOCK_Items;
+        let displayItems = itemsArray;
 
         if (activeTab !== 'All') {
              displayItems = displayItems.filter(item => item.type === activeTab.toLowerCase());
@@ -35,11 +36,8 @@ const LostFound = () => {
         setItems(displayItems);
     } catch (error) {
         console.error("Failed to fetch lost/found items", error);
-        let displayItems = MOCK_Items;
-        if (activeTab !== 'All') {
-             displayItems = displayItems.filter(item => item.type === activeTab.toLowerCase());
-        }
-        setItems(displayItems);
+        toast.error("Failed to fetch items");
+        setItems([]);
     } finally {
         setLoading(false);
     }
@@ -49,17 +47,12 @@ const LostFound = () => {
     setIsReporting(true);
     try {
         await lostfoundService.reportItem(itemData);
-        // Optimistic update
-        const newItem = {
-            id: Date.now(),
-            ...itemData,
-            status: 'active',
-            image: !itemData.image ? null : URL.createObjectURL(itemData.image) // Temp preview
-        };
-        setItems([newItem, ...items]);
+        toast.success("Item reported successfully!");
         setIsModalOpen(false);
+        await fetchItems();
     } catch (error) {
         console.error("Failed to report item", error);
+        toast.error("Failed to report item");
     } finally {
         setIsReporting(false);
     }
@@ -68,15 +61,13 @@ const LostFound = () => {
   const handleResolveItem = async (id) => {
       try {
           await lostfoundService.resolveItem(id);
+          toast.success("Item resolved successfully!");
           setItems(items.map(item => 
-              item.id === id ? { ...item, status: 'resolved' } : item
+              (item._id || item.id) === id ? { ...item, status: 'resolved' } : item
           ));
       } catch (error) {
           console.error("Failed to resolve item", error);
-          // Optimistic
-          setItems(items.map(item => 
-              item.id === id ? { ...item, status: 'resolved' } : item
-          ));
+          toast.error("Failed to resolve item");
       }
   };
 
@@ -108,7 +99,7 @@ const LostFound = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map((item) => (
                 <ItemCard 
-                    key={item.id} 
+                    key={item._id || item.id} 
                     item={item} 
                     onResolve={handleResolveItem} 
                 />
@@ -130,39 +121,5 @@ const LostFound = () => {
     </div>
   );
 };
-
-// Mock Data
-const MOCK_Items = [
-    {
-        id: 1,
-        type: 'lost',
-        title: 'MacBook Air Charger',
-        location: 'Library Reading Room',
-        date: '2024-12-10',
-        description: 'White MagSafe charger left on table 4.',
-        status: 'active',
-        image: null // Placeholder will be used
-    },
-    {
-        id: 2,
-        type: 'found',
-        title: 'Silver Key',
-        location: 'Cafeteria',
-        date: '2024-12-11',
-        description: 'Found a silver key with a blue keychain near the juice counter.',
-        status: 'active',
-        image: null
-    },
-    {
-        id: 3,
-        type: 'lost',
-        title: 'Blue Water Bottle',
-        location: 'Basketball Court',
-        date: '2024-12-12',
-        description: 'Metal water bottle, has a sticker on it.',
-        status: 'resolved',
-        image: null
-    }
-];
 
 export default LostFound;

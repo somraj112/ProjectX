@@ -5,19 +5,19 @@ import CreateEventModal from '../components/events/CreateEventModal';
 import Button from '../components/ui/Button';
 import Loader from '../components/ui/Loader';
 import EmptyState from '../components/ui/EmptyState';
-import Tabs from '../components/ui/Tabs'; // Re-creating simple Tabs here locally or inline if deleted?
-// Wait, I deleted Tabs.jsx previously in step 160 ("rm src/components/ui/Tabs.jsx"). 
-// I need to implement a simple tab/filter list in this file or restore Tabs.jsx if I want to use it.
-// The task says "Category filters: - Event categories: Technical, Cultural, Sports, Workshop".
-// I'll implement inline tabs for now to avoid re-creating a file without permission, or just use simple buttons.
+import Tabs from '../components/ui/Tabs'; 
 
+import { useAuth } from '../context/AuthContext';
 import eventsService from '../services/events.service';
+import toast from 'react-hot-toast';
 
 const Events = () => {
+  const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -27,27 +27,13 @@ const Events = () => {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-        // In real app, pass category to API: eventsService.getEvents(activeCategory)
-        // For now, we fetch all and filter client side or mock
-        const data = await eventsService.getEvents();
-        // Mocking response logic since backend might be offline
+        const data = await eventsService.getEvents(activeCategory);
         const allEvents = Array.isArray(data) ? data : (data.events || []);
-        
-        let displayEvents = allEvents.length > 0 ? allEvents : MOCK_EVENTS;
-
-        if (activeCategory !== 'All') {
-            displayEvents = displayEvents.filter(e => e.category === activeCategory);
-        }
-        
-        setEvents(displayEvents);
+        setEvents(allEvents);
     } catch (error) {
         console.error("Failed to fetch events", error);
-        // Fallback to mock
-        let displayEvents = MOCK_EVENTS;
-         if (activeCategory !== 'All') {
-            displayEvents = displayEvents.filter(e => e.category === activeCategory);
-        }
-        setEvents(displayEvents);
+        toast.error("Failed to load events");
+        setEvents([]);
     } finally {
         setLoading(false);
     }
@@ -56,19 +42,43 @@ const Events = () => {
   const handleCreateEvent = async (eventData) => {
     setIsCreating(true);
     try {
-        await eventsService.registerForEvent(1); // Placeholder call, actually should be createEvent
-        // Optimistic update
-        const newEvent = {
-            id: Date.now(),
-            ...eventData,
-            image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=1000'
-        };
-        setEvents([newEvent, ...events]);
+        await eventsService.createEvent(eventData);
+        toast.success("Event created successfully");
         setIsModalOpen(false);
+        await fetchEvents();
     } catch (error) {
         console.error("Failed to create event", error);
+        toast.error("Failed to create event");
     } finally {
         setIsCreating(false);
+    }
+  };
+
+  const handleUpdateEvent = async (id, eventData) => {
+    setIsCreating(true);
+    try {
+        await eventsService.updateEvent(id, eventData);
+        toast.success("Event updated successfully");
+        setIsModalOpen(false);
+        setSelectedEvent(null);
+        await fetchEvents();
+    } catch (error) {
+        console.error("Failed to update event", error);
+        toast.error("Failed to update event");
+    } finally {
+        setIsCreating(false);
+    }
+  };
+
+  const handleDeleteEvent = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    try {
+        await eventsService.deleteEvent(id);
+        toast.success("Event deleted successfully");
+        await fetchEvents();
+    } catch (error) {
+        console.error("Failed to delete event", error);
+        toast.error("Failed to delete event");
     }
   };
 
@@ -99,7 +109,14 @@ const Events = () => {
       ) : events.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => (
-                <EventCard key={event.id} event={event} onRegister={(id) => console.log('Register', id)} />
+                <EventCard 
+                   key={event._id || event.id} 
+                   event={event} 
+                   currentUser={user}
+                   onRegister={(id) => console.log('Register', id)} 
+                   onEdit={(evt) => { setSelectedEvent(evt); setIsModalOpen(true); }}
+                   onDelete={handleDeleteEvent}
+                />
             ))}
         </div>
       ) : (
@@ -111,48 +128,14 @@ const Events = () => {
 
       <CreateEventModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => { setIsModalOpen(false); setSelectedEvent(null); }} 
         onCreate={handleCreateEvent}
+        onUpdate={handleUpdateEvent}
         isCreating={isCreating}
+        initialData={selectedEvent}
       />
     </div>
   );
 };
-
-// Mock Data
-const MOCK_EVENTS = [
-    {
-        id: 1,
-        title: 'Annual Tech Fest 2024',
-        date: 'Dec 20, 2024',
-        location: 'Main Auditorium',
-        category: 'Technical',
-        image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2670'
-    },
-    {
-        id: 2,
-        title: 'Basketball Finals',
-        date: 'Jan 10, 2025',
-        location: 'Sports Complex',
-        category: 'Sports',
-        image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=2690'
-    },
-    {
-        id: 3,
-        title: 'AI Workshop',
-        date: 'Feb 15, 2025',
-        location: 'Lab 2',
-        category: 'Workshop',
-        image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=2670'
-    },
-    {
-        id: 4,
-        title: 'Cultural Night',
-        date: 'Mar 05, 2025',
-        location: 'Open Air Theatre',
-        category: 'Cultural',
-        image: 'https://images.unsplash.com/photo-1514525253440-b393452e8d26?auto=format&fit=crop&q=80&w=2670'
-    }
-];
 
 export default Events;

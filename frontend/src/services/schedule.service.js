@@ -14,6 +14,16 @@ const scheduleService = {
     return response.data;
   },
 
+  updateSchedule: async (id, scheduleData) => {
+    const response = await api.put(`/schedule/${id}`, scheduleData);
+    return response.data;
+  },
+
+  deleteSchedule: async (id) => {
+    const response = await api.delete(`/schedule/${id}`);
+    return response.data;
+  },
+
   connectGoogle: async () => {
     const response = await api.get('/schedule/connect');
     return response.data; // Should return { url: '...' }

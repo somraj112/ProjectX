@@ -5,6 +5,7 @@ import Loader from '../components/ui/Loader';
 import EmptyState from '../components/ui/EmptyState';
 import feedService from '../services/feed.service';
 import { Newspaper } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Feed = () => {
     const [posts, setPosts] = useState([]);
@@ -19,20 +20,12 @@ const Feed = () => {
         setLoading(true);
         try {
             const data = await feedService.getPosts();
-            // Ensure data is array, if backend returns object with posts array, use that
-            // For now, assuming backend returns array or { posts: [] }
             const postsArray = Array.isArray(data) ? data : (data.posts || []);
-            
-            // If empty, use mock data for demo purposes since backend might not be ready
-            if (postsArray.length === 0) {
-                 setPosts(MOCK_POSTS);
-            } else {
-                 setPosts(postsArray);
-            }
+            setPosts(postsArray);
         } catch (error) {
             console.error("Failed to fetch posts", error);
-            // Fallback to mock data on error for demo
-            setPosts(MOCK_POSTS);
+            toast.error("Failed to load feed");
+            setPosts([]);
         } finally {
             setLoading(false);
         }
@@ -41,24 +34,12 @@ const Feed = () => {
     const handleCreatePost = async (postData) => {
         setCreatingPost(true);
         try {
-            // Optimistic update
-            const newPost = {
-                id: Date.now(),
-                content: postData.content,
-                likes: 0,
-                comments: 0,
-                time: 'Just now',
-                user: { name: 'You' },
-                ...postData
-            };
-            
-            setPosts([newPost, ...posts]);
-            
-            // Actual API Call
             await feedService.createPost(postData);
+            // Refresh posts after create rather than optimistic string to get real IDs & dates
+            await fetchPosts();
         } catch (error) {
             console.error("Failed to create post", error);
-            // Revert on failure? For now just log
+            toast.error("Failed to create post");
         } finally {
             setCreatingPost(false);
         }
@@ -75,7 +56,12 @@ const Feed = () => {
       ) : posts.length > 0 ? (
         <div className="space-y-6">
             {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                <PostCard 
+                    key={post._id || post.id} 
+                    post={post} 
+                    onDelete={(deletedId) => setPosts(posts.filter(p => (p._id || p.id) !== deletedId))}
+                    onEdit={(updatedPost) => setPosts(posts.map(p => (p._id || p.id) === (updatedPost._id || updatedPost.id) ? { ...p, ...updatedPost } : p))}
+                />
             ))}
         </div>
       ) : (
@@ -88,33 +74,5 @@ const Feed = () => {
     </div>
   );
 };
-
-// Fallback Mock Data
-const MOCK_POSTS = [
-    {
-        id: 1,
-        user: { name: 'Akinkunmi Tunde' },
-        time: 'Just now',
-        content: 'Hello, Guys',
-        likes: 1,
-        comments: 0
-    },
-    {
-        id: 2,
-        user: { name: 'Akinkunmi Tunde' },
-        time: '10m ago',
-        content: "Hi mates❤️ Its a new week, I hope will have the best of it. Let's go guys!!!\nAnd, dont forget to like and share. Thanks❤️",
-        likes: 556,
-        comments: 12
-    },
-    {
-        id: 3,
-        user: { name: 'Sarah Jenkins' },
-        time: '1h ago',
-        content: "Does anyone have the notes for today's Biology lecture? I missed the first half. 🧬",
-        likes: 24,
-        comments: 5
-    }
-];
 
 export default Feed;

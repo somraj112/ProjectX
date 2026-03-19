@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import { Calendar, Clock, AlignLeft, Type } from 'lucide-react';
+import { Calendar, Clock, AlignLeft, Type, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const AddScheduleModal = ({ isOpen, onClose, onCreate, isCreating }) => {
+const AddScheduleModal = ({ isOpen, onClose, onCreate, onUpdate, onDelete, isCreating, initialData }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -14,6 +14,40 @@ const AddScheduleModal = ({ isOpen, onClose, onCreate, isCreating }) => {
     endDate: '',
     endTime: ''
   });
+
+  React.useEffect(() => {
+    if (initialData && isOpen) {
+      // Parse ISO dates back into local YYYY-MM-DD and HH:mm
+      const start = new Date(initialData.start);
+      const end = new Date(initialData.end);
+      
+      const toLocalISOString = (date) => {
+        const offset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+      };
+
+      const startLocal = toLocalISOString(start);
+      const endLocal = toLocalISOString(end);
+
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.extendedProps?.description || '',
+        startDate: startLocal.split('T')[0],
+        startTime: startLocal.split('T')[1],
+        endDate: endLocal.split('T')[0],
+        endTime: endLocal.split('T')[1],
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        startDate: '',
+        startTime: '',
+        endDate: '',
+        endTime: ''
+      });
+    }
+  }, [initialData, isOpen]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,12 +71,18 @@ const AddScheduleModal = ({ isOpen, onClose, onCreate, isCreating }) => {
       return;
     }
 
-    onCreate({
+    const payload = {
       title: formData.title,
       description: formData.description,
       startDateTime,
       endDateTime
-    });
+    };
+
+    if (initialData) {
+      onUpdate(initialData.id, payload);
+    } else {
+      onCreate(payload);
+    }
     
     // Reset form
     setFormData({
@@ -56,7 +96,7 @@ const AddScheduleModal = ({ isOpen, onClose, onCreate, isCreating }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Schedule">
+    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Schedule" : "Add Schedule"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Title"
@@ -126,21 +166,35 @@ const AddScheduleModal = ({ isOpen, onClose, onCreate, isCreating }) => {
            </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <Button
-            type="submit"
-            isLoading={isCreating}
-            className="px-6"
-          >
-            Add to Schedule
-          </Button>
+        <div className="flex justify-between items-center mt-6">
+          {initialData ? (
+             <button
+               type="button"
+               onClick={() => onDelete(initialData.id)}
+               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center"
+               title="Delete Event"
+             >
+               <Trash2 size={20} />
+             </button>
+          ) : (
+            <div></div>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <Button
+              type="submit"
+              isLoading={isCreating}
+              className="px-6"
+            >
+              {initialData ? 'Save Changes' : 'Add to Schedule'}
+            </Button>
+          </div>
         </div>
       </form>
     </Modal>

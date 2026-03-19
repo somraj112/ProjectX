@@ -7,14 +7,50 @@ const feedService = {
   },
 
   createPost: async (postData) => {
-    // If postData contains files, we might need 'multipart/form-data'
-    // But axios handles FormData automatically if passed directly
-    const response = await api.post('/posts', postData);
+    let payload = postData;
+    if (!(postData instanceof FormData)) {
+        payload = new FormData();
+        Object.keys(postData).forEach(key => {
+            if (postData[key] !== null && postData[key] !== undefined) {
+                payload.append(key, postData[key]);
+            }
+        });
+    }
+
+    const response = await api.post('/posts', payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data;
   },
 
   likePost: async (postId) => {
-    const response = await api.post(`/posts/${postId}/like`);
+    const response = await api.patch(`/posts/${postId}/like`);
+    return response.data;
+  },
+
+  deletePost: async (postId) => {
+      const response = await api.delete(`/posts/${postId}`);
+      return response.data;
+  },
+
+  editPost: async (postId, postData) => {
+    let payload = postData;
+    if (!(postData instanceof FormData)) {
+        payload = new FormData();
+        Object.keys(postData).forEach(key => {
+            if (postData[key] !== null && postData[key] !== undefined) {
+                payload.append(key, postData[key]);
+            }
+        });
+    }
+
+    const response = await api.put(`/posts/${postId}`, payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data;
   },
 

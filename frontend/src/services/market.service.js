@@ -13,7 +13,26 @@ const marketService = {
   },
 
   listItem: async (itemData) => {
-    const response = await api.post('/market', itemData);
+    let payload = itemData;
+    if (!(itemData instanceof FormData)) {
+        payload = new FormData();
+        Object.keys(itemData).forEach(key => {
+            if (itemData[key] !== null && itemData[key] !== undefined) {
+                // If it's an array of files, append each one
+                if (Array.isArray(itemData[key])) {
+                    itemData[key].forEach(val => payload.append(key, val));
+                } else {
+                    payload.append(key, itemData[key]);
+                }
+            }
+        });
+    }
+
+    const response = await api.post('/market', payload, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data;
   },
 

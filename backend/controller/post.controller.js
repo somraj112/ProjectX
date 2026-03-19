@@ -38,7 +38,7 @@ exports.createPost = async (req, res) => {
 
           const uploadedImage = await cloudinary.uploader.upload(
             imageFile.filepath,
-            { folder: "Unify/Posts" }
+            { folder: "Unify/Posts", resource_type: "auto" }
           );
 
           imageUrl = uploadedImage.secure_url;
@@ -172,6 +172,84 @@ exports.deletePost = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       msg: "Error deleting post",
+      err: err.message,
+    });
+  }
+};
+
+exports.updatePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ msg: "Post not found" });
+    }
+
+    if (post.authorId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Not authorized to edit this post" });
+    }
+
+    const form = new IncomingForm({ keepExtensions: true });
+
+    form.parse(req, async (err, fields, files) => {
+      try {
+        if (err) {
+          return res.status(400).json({
+            msg: "Error parsing form data",
+            err: err.message,
+          });
+        }
+
+        const content = Array.isArray(fields.content)
+          ? fields.content[0]
+          : fields.content;
+
+        if (content !== undefined && content.trim()) {
+           post.content = content.trim();
+        }
+
+        if (files.image) {
+          const imageFile = Array.isArray(files.image)
+            ? files.image[0]
+            : files.image;
+
+          // Delete old image if it exists
+          if (post.public_id) {
+            await cloudinary.uploader.destroy(post.public_id);
+          }
+
+          const uploadedImage = await cloudinary.uploader.upload(
+            imageFile.filepath,
+            { folder: "Unify/Posts", resource_type: "auto" }
+          );
+
+          post.imageUrl = uploadedImage.secure_url;
+          post.public_id = uploadedImage.public_id;
+
+          fs.unlinkSync(imageFile.filepath);
+        }
+
+        await post.save();
+        
+        // Return populated post
+        const updatedPost = await Post.findById(postId).populate("authorId", "name avatarUrl department year");
+
+        return res.status(200).json({
+          msg: "Post updated successfully",
+          post: updatedPost,
+        });
+      } catch (innerErr) {
+        console.error("UpdatePost error:", innerErr);
+        return res.status(500).json({
+          msg: "Failed to update post",
+          err: innerErr.message,
+        });
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({
+      msg: "Server error",
       err: err.message,
     });
   }

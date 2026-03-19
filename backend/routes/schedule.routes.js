@@ -4,14 +4,16 @@ const auth = require("../middleware/auth.middleware");
 
 const {
   connectGoogle,
-  googleCallback,
   createSchedule,
   getSchedule,
+  updateSchedule,
+  deleteSchedule,
 } = require("../controller/schedule.controller");
 
 router.get("/connect", auth, connectGoogle);
-router.get("/callback", auth, googleCallback);
 router.post("/", auth, createSchedule);
 router.get("/", auth, getSchedule);
+router.put("/:id", auth, updateSchedule);
+router.delete("/:id", auth, deleteSchedule);
 
 module.exports = router;

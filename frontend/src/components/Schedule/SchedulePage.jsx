@@ -15,6 +15,7 @@ const SchedulePage = () => {
   const [scheduleData, setScheduleData] = useState({ personal: [], college: [] });
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' or 'college'
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(true); // Assume true initially
 
@@ -31,16 +32,19 @@ const SchedulePage = () => {
       const formatEvents = (events, color) => 
         (events || []).map(e => ({
           ...e,
-          start: e.start?.dateTime || e.startDateTime || e.start, // Handle various date formats potentially coming from GCal or DB
-          end: e.end?.dateTime || e.endDateTime || e.end,
+          start: e.start?.dateTime || e.start?.date || e.startDateTime || e.start, // Handle various date formats potentially coming from GCal or DB
+          end: e.end?.dateTime || e.end?.date || e.endDateTime || e.end,
           backgroundColor: color,
           borderColor: color,
           title: e.summary || e.title // GCal uses 'summary'
         }));
 
+      const eventsList = Array.isArray(data) ? data : data.personal || [];
+      const collegeList = Array.isArray(data) ? [] : data.college || [];
+
       setScheduleData({
-        personal: formatEvents(data.personal, '#3B82F6'), // Blue
-        college: formatEvents(data.college, '#F97316')   // Orange
+        personal: formatEvents(eventsList, '#3B82F6'), // Blue
+        college: formatEvents(collegeList, '#F97316')   // Orange
       });
       setGoogleConnected(true);
     } catch (error) {
@@ -68,6 +72,41 @@ const SchedulePage = () => {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleUpdateSchedule = async (id, data) => {
+    setIsCreating(true);
+    try {
+      await scheduleService.updateSchedule(id, data);
+      toast.success("Schedule updated successfully!");
+      setIsModalOpen(false);
+      setSelectedEvent(null);
+      fetchSchedule(); // Refresh data
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update schedule");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDeleteSchedule = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    try {
+      await scheduleService.deleteSchedule(id);
+      toast.success("Schedule deleted successfully!");
+      setIsModalOpen(false);
+      setSelectedEvent(null);
+      fetchSchedule(); // Refresh data
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete schedule");
+    }
+  };
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
   };
 
   const handleConnectGoogle = async () => {
@@ -148,14 +187,19 @@ const SchedulePage = () => {
         </div>
       </div>
 
-      {/* Calendar */}
-      <ScheduleCalendar events={currentEvents} />
+      <ScheduleCalendar events={currentEvents} onEventClick={handleEventClick} />
 
       <AddScheduleModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+        }}
         onCreate={handleCreateSchedule}
+        onUpdate={handleUpdateSchedule}
+        onDelete={handleDeleteSchedule}
         isCreating={isCreating}
+        initialData={selectedEvent}
       />
     </div>
   );

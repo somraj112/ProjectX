@@ -1,8 +1,19 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const formidable = require("formidable");
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "Unify/Profiles",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+  },
+});
+
+const upload = multer({ storage }).single("avatar");
 
 exports.signup = async (req, res) => {
   try {
@@ -117,54 +128,47 @@ exports.myInfo = async (req, res) => {
   }
 };
 
-exports.updateProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(400).json({ msg: "User not found" });
+exports.updateProfile = (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ msg: "File upload error", err: err.message });
     }
 
-    const form = formidable({});
-
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        return res.status(400).json({
-          msg: "Form parse error",
-          err,
-        });
+    try {
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(400).json({ msg: "User not found" });
       }
 
-      if (fields.bio) {
-        user.bio = fields.bio;
+      if (req.body.bio !== undefined) {
+        user.bio = req.body.bio;
       }
 
-      if (files.avatar) {
+      if (req.file) {
+        // Remove old avatar from Cloudinary if it exists
         if (user.public_id) {
           await cloudinary.uploader.destroy(user.public_id);
         }
-
-        const uploadedImage = await cloudinary.uploader.upload(
-          files.avatar.filepath,
-          { folder: "Unify/Profiles" }
-        );
-
-        user.avatarUrl = uploadedImage.secure_url;
-        user.public_id = uploadedImage.public_id;
+        user.avatarUrl = req.file.path;
+        user.public_id = req.file.filename;
       }
 
       await user.save();
 
+      const userObj = user.toObject();
+      delete userObj.password;
+
       res.status(200).json({
         msg: "Profile updated successfully",
-        user,
+        user: userObj,
       });
-    });
-  } catch (err) {
-    res.status(400).json({
-      msg: "Error updating profile",
-      err: err.message,
-    });
-  }
+    } catch (err) {
+      res.status(400).json({
+        msg: "Error updating profile",
+        err: err.message,
+      });
+    }
+  });
 };
 
 exports.searchUser = async (req, res) => {
