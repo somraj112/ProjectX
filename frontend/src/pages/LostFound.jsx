@@ -71,6 +71,19 @@ const LostFound = () => {
       }
   };
 
+  const handleDeleteItem = async (id) => {
+      if (window.confirm('Are you sure you want to remove this report?')) {
+          try {
+              await lostfoundService.deleteItem(id);
+              toast.success("Report removed");
+              setItems(items.filter(i => (i._id || i.id) !== id));
+          } catch (error) {
+               console.error("Failed to delete item", error);
+               toast.error("Failed to remove report");
+          }
+      }
+  };
+
   const tabs = ['All', 'Lost', 'Found'];
 
   return (
@@ -102,6 +115,7 @@ const LostFound = () => {
                     key={item._id || item.id} 
                     item={item} 
                     onResolve={handleResolveItem} 
+                    onDelete={handleDeleteItem}
                 />
             ))}
         </div>

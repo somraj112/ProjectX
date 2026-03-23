@@ -10,7 +10,7 @@ const ProductCard = ({ product, onContact, onDelete }) => {
       {/* Image Section */}
       <div className="relative h-48 w-full bg-gray-100">
         <img 
-            src={product.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=1770'} 
+            src={(product.images && product.images.length > 0) ? product.images[0] : 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=1770'} 
             alt={product.title} 
             className="w-full h-full object-cover"
         />
@@ -40,7 +40,7 @@ const ProductCard = ({ product, onContact, onDelete }) => {
             </Button>
             <button 
                 className="h-10 w-10 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                onClick={() => onDelete(product.id)}
+                onClick={() => onDelete(product._id || product.id)}
             >
                 <Trash2 size={16} />
             </button>

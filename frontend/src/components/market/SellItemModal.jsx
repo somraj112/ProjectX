@@ -11,7 +11,7 @@ const SellItemModal = ({ isOpen, onClose, onSell, isListing }) => {
     price: '',
     category: 'Books',
     description: '',
-    image: null
+    images: null
   });
 
   const handleChange = (e) => {
@@ -25,7 +25,7 @@ const SellItemModal = ({ isOpen, onClose, onSell, isListing }) => {
 
   const handleFileChange = (e) => {
       // In a real app, we'd handle file upload here
-      setFormData(prev => ({ ...prev, image: e.target.files[0] }));
+      setFormData(prev => ({ ...prev, images: e.target.files[0] }));
   }
 
   const handleSubmit = (e) => {
@@ -93,8 +93,8 @@ const SellItemModal = ({ isOpen, onClose, onSell, isListing }) => {
                             <input id="image-upload" name="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
                         </label>
                     </div>
-                    {formData.image && (
-                         <p className="text-sm text-green-600 font-semibold mt-2">Selected: {formData.image.name}</p>
+                    {formData.images && (
+                         <p className="text-sm text-green-600 font-semibold mt-2">Selected: {formData.images.name}</p>
                     )}
                 </div>
             </div>

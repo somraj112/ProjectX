@@ -26,7 +26,12 @@ const lostFoundService = {
   },
 
   resolveItem: async (id) => {
-    const response = await api.patch(`/lost-found/${id}/resolve`);
+    const response = await api.patch(`/lost-found/${id}/status`, { status: 'resolved' });
+    return response.data;
+  },
+
+  deleteItem: async (id) => {
+    const response = await api.delete(`/lost-found/${id}`);
     return response.data;
   },
 };

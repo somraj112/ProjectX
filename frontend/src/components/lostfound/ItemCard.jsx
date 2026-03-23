@@ -1,10 +1,10 @@
 import React from 'react';
-import { MapPin, Calendar, CheckCircle } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, Trash2 } from 'lucide-react';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 
-const ItemCard = ({ item, onResolve }) => {
+const ItemCard = ({ item, onResolve, onDelete }) => {
   const isLost = item.type === 'lost';
   const badgeColor = isLost ? 'bg-red-500 text-white' : 'bg-green-500 text-white';
 
@@ -13,7 +13,7 @@ const ItemCard = ({ item, onResolve }) => {
       {/* Image Section */}
       <div className="relative h-48 w-full bg-gray-100">
         <img 
-            src={item.image || 'https://images.unsplash.com/photo-1510520434124-5bc7e642b61d?auto=format&fit=crop&q=80&w=1000'} 
+            src={item.imageUrl || 'https://images.unsplash.com/photo-1510520434124-5bc7e642b61d?auto=format&fit=crop&q=80&w=1000'} 
             alt={item.title} 
             className="w-full h-full object-cover"
         />
@@ -43,17 +43,33 @@ const ItemCard = ({ item, onResolve }) => {
 
         <div className="mt-auto border-t border-gray-50 pt-4">
             {item.status === 'resolved' ? (
-                <div className="w-full py-2 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium flex items-center justify-center">
-                    <CheckCircle size={16} className="mr-2" /> Resolved
+                <div className="flex space-x-2">
+                    <div className="flex-1 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium flex items-center justify-center">
+                        <CheckCircle size={16} className="mr-2" /> Resolved
+                    </div>
+                    <button 
+                        className="h-10 w-10 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors shrink-0"
+                        onClick={() => onDelete(item._id || item.id)}
+                    >
+                        <Trash2 size={16} />
+                    </button>
                 </div>
             ) : (
-                <Button 
-                    variant="outline" 
-                    className="w-full justify-center"
-                    onClick={() => onResolve(item.id)}
-                >
-                    Mark as Resolved
-                </Button>
+                <div className="flex space-x-2">
+                    <Button 
+                        variant="outline" 
+                        className="flex-1 justify-center"
+                        onClick={() => onResolve(item._id || item.id)}
+                    >
+                        Mark as Resolved
+                    </Button>
+                    <button 
+                        className="h-10 w-10 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors shrink-0"
+                        onClick={() => onDelete(item._id || item.id)}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
             )}
         </div>
       </div>
